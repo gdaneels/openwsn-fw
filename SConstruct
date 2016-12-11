@@ -111,6 +111,7 @@ command_line_options = {
         'iot-lab_A8-M3',
         'agilefox',
         'samr21_xpro',
+        'i3mote',
         # misc.
         'python',
     ],
