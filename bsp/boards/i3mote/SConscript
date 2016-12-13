@@ -6,7 +6,8 @@ localEnv = env.Clone()
 
 source   = \
     [file for file in Glob('*.c') if file.name.find('iar')==-1] + \
-    Glob('cc26xxware/driverlib/*.c')
+    Glob('cc26xxware/driverlib/*.c') + \
+    Glob('contiki/*.c')
 
 localEnv.Append(
     CPPPATH =  [
@@ -14,7 +15,8 @@ localEnv.Append(
     	os.path.join('#','bsp','boards','i3mote','cc26xxware','inc'),
     	os.path.join('#','bsp','boards','i3mote','cc26xxware','rf_patches'),
     	os.path.join('#','bsp','boards','i3mote','cc26xxware','rom_crypto'),
-    	os.path.join('#','bsp','boards','i3mote','cc26xxware','driverlib')
+    	os.path.join('#','bsp','boards','i3mote','cc26xxware','driverlib'),
+    	os.path.join('#','bsp','boards','i3mote','contiki'),
     ],
 )
 

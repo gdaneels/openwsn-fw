@@ -1,3 +1,4 @@
+
 /**
  * Author: Pere Tuset (peretuset@uoc.edu)
  *         Xavier Vilajosana (xvilajosana@eecs.berkeley.edu)
@@ -16,8 +17,8 @@
 #include "i2c.h"
 #include "sensors.h"
 
-#include "prcm.h"
-#include "vims.h"
+#include "ti-lib.h"
+#include "oscillators.h"
 
 //=========================== variables =======================================
 
@@ -39,21 +40,39 @@ void delay(void) {
 }
 
 void board_init(void) {
-	PRCMPowerDomainOn(PRCM_DOMAIN_PERIPH);
-  	while((PRCMPowerDomainStatus(PRCM_DOMAIN_PERIPH) != PRCM_DOMAIN_POWER_ON));
 
-	// Enable clock to GPIO module while CPU is running
-  	PRCMPeripheralRunEnable(PRCM_PERIPH_GPIO);
-   	PRCMLoadSet();
-  	while( ! PRCMLoadGet() );
+    /* Enable flash cache and prefetch. */
+    ti_lib_vims_mode_set(VIMS_BASE, VIMS_MODE_ENABLED);
+    ti_lib_vims_configure(VIMS_BASE, true, true);
+
+    ti_lib_int_master_disable();
+
+    /* Set the LF XOSC as the LF system clock source */
+    oscillators_select_lf_xosc();
+
+    //lpm_init();
+
+    board_init();
+
+	/* Turn on the PERIPH PD */
+    ti_lib_prcm_power_domain_on(PRCM_DOMAIN_PERIPH);
+    while((ti_lib_prcm_power_domain_status(PRCM_DOMAIN_PERIPH)
+         != PRCM_DOMAIN_POWER_ON));
+
+	/* Enable GPIO peripheral */
+    ti_lib_prcm_peripheral_run_enable(PRCM_PERIPH_GPIO);
+
+    /* Apply settings and wait for them to take effect */
+    ti_lib_prcm_load_set();
+    while(!ti_lib_prcm_load_get());
 
 	leds_init();
 
-	while(true) {
-		leds_error_toggle();
-		leds_sync_toggle();
-		delay();
-	}
+  	while(true) {
+  		leds_error_toggle();
+  		leds_sync_toggle();
+  		delay();
+  	}
 }
 
 /**
