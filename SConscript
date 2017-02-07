@@ -35,7 +35,8 @@ dummyFunc = Builder(
     action = '',
     suffix = '.ihex',
 )
-
+if env['panid']:
+    env.Append(CPPDEFINES    = {'PANID_DEFINED' : env['panid']})
 if env['dagroot']==1:
     env.Append(CPPDEFINES    = 'DAGROOT')
 if env['forcetopology']==1:
@@ -46,13 +47,6 @@ if env['cryptoengine']:
     env.Append(CPPDEFINES    = {'CRYPTO_ENGINE_SCONS' : env['cryptoengine']})
 if env['l2_security']==1:
     env.Append(CPPDEFINES    = 'L2_SECURITY_ACTIVE')
-if env['goldenImage']=='sniffer':
-    env.Append(CPPDEFINES    = 'GOLDEN_IMAGE_SNIFFER')
-else:
-    if env['goldenImage']=='root':
-        env.Append(CPPDEFINES    = 'GOLDEN_IMAGE_ROOT')
-    else:
-        env.Append(CPPDEFINES    = 'GOLDEN_IMAGE_NONE')
 
 if env['toolchain']=='mspgcc':
     
@@ -170,7 +164,7 @@ elif env['toolchain']=='iar':
 
 elif env['toolchain']=='iar-proj':
     
-    if env['board'] not in ['telosb','gina','wsn430v13b','wsn430v14','z1','openmotestm','agilefox','OpenMote-CC2538']:
+    if env['board'] not in ['telosb','gina','wsn430v13b','wsn430v14','z1','openmotestm','agilefox','OpenMote-CC2538','iot-lab_M3']:
         raise SystemError('toolchain {0} can not be used for board {1}'.format(env['toolchain'],env['board']))
     
     env['IAR_EW430_INSTALLDIR'] = os.environ['IAR_EW430_INSTALLDIR']
@@ -183,8 +177,8 @@ elif env['toolchain']=='iar-proj':
     
     iarProjBuilderFunction = Builder(
         action = '"{0}" $SOURCE Debug'.format(
-                    os.path.join(iarEw430CommonBinDir,'IarBuild')
-                ),
+            os.path.join(iarEw430CommonBinDir,'IarBuild')
+        ),
         src_suffix  = '.ewp',
     )
     env.Append(BUILDERS = {'iarProjBuilder' : iarProjBuilderFunction})
@@ -200,7 +194,7 @@ elif env['toolchain']=='iar-proj':
     
 elif env['toolchain']=='armgcc':
     
-    if env['board'] not in ['OpenMote-CC2538','iot-lab_M3','iot-lab_A8-M3','openmotestm']:
+    if env['board'] not in ['OpenMote-CC2538','iot-lab_M3','iot-lab_A8-M3','openmotestm', 'samr21_xpro']:
         raise SystemError('toolchain {0} can not be used for board {1}'.format(env['toolchain'],env['board']))
     
     if   env['board']=='OpenMote-CC2538':
@@ -279,6 +273,47 @@ elif env['toolchain']=='armgcc':
         env.Append(LINKFLAGS     = '-Tbsp/boards/'+env['board']+'/stm32_flash.ld')
         env.Append(LINKFLAGS     = os.path.join('build',env['board']+'_armgcc','bsp','boards',env['board'],'startup.o'))
         env.Append(LINKFLAGS     = os.path.join('build',env['board']+'_armgcc','bsp','boards',env['board'],'configure','stm32f10x_it.o'))
+        # object manipulation
+        env.Replace(OBJCOPY      = 'arm-none-eabi-objcopy')
+        env.Replace(OBJDUMP      = 'arm-none-eabi-objdump')
+        # archiver
+        env.Replace(AR           = 'arm-none-eabi-ar')
+        env.Append(ARFLAGS       = '')
+        env.Replace(RANLIB       = 'arm-none-eabi-ranlib')
+        env.Append(RANLIBFLAGS   = '')
+        # misc
+        env.Replace(NM           = 'arm-none-eabi-nm')
+        env.Replace(SIZE         = 'arm-none-eabi-size')
+        
+    elif   env['board']=='samr21_xpro':
+        
+        # compiler (C)
+        env.Replace(CC           = 'arm-none-eabi-gcc')
+        env.Append(CCFLAGS       = '-O1')
+        env.Append(CCFLAGS       = '-Wall')
+        env.Append(CCFLAGS       = '-Wa,-adhlns=${TARGET.base}.lst')
+        env.Append(CCFLAGS       = '-c')
+        env.Append(CCFLAGS       = '-fmessage-length=0')
+        env.Append(CCFLAGS       = '-mcpu=cortex-m0plus')
+        env.Append(CCFLAGS       = '-mthumb')
+        env.Append(CCFLAGS       = '-g3')
+        env.Append(CCFLAGS       = '-Wstrict-prototypes')
+        env.Append(CCFLAGS       = '-Ibsp/boards/samr21_xpro/drivers/inc')
+        env.Append(CCFLAGS       = '-Ibsp/boards/samr21_xpro/cmsis/inc')
+        env.Append(CCFLAGS       = '-D__SAMR21G18A__')
+        env.Append(CCFLAGS       = '-Ibsp/boards/samr21_xpro/SAMR21_DFP/1.0.34/include')
+        env.Append(CCFLAGS       = '-std=c99')
+        # assembler
+        env.Replace(AS           = 'arm-none-eabi-as')
+        env.Append(ASFLAGS       = '-ggdb -g3 -mcpu=cortex-m0plus -mlittle-endian')
+        # linker
+        env.Append(LINKFLAGS     = '-Tbsp/boards/samr21_xpro/cmsis/linkerScripts/samr21g18a_flash.ld')
+#        env.Append(LINKFLAGS     = '-Tbsp/boards/samr21_xpro/cmsis/linkerScripts/samr21g18a_sram.ld')
+        env.Append(LINKFLAGS     = '-nostartfiles')
+        env.Append(LINKFLAGS     = '-Wl,-Map,${TARGET.base}.map')
+        env.Append(LINKFLAGS     = '-mcpu=cortex-m0plus')
+        env.Append(LINKFLAGS     = '-mthumb')
+        env.Append(LINKFLAGS     = '-g3')
         # object manipulation
         env.Replace(OBJCOPY      = 'arm-none-eabi-objcopy')
         env.Replace(OBJDUMP      = 'arm-none-eabi-objdump')
@@ -666,7 +701,7 @@ def populateTargetGroup(localEnv,targetName):
         if targetName.startswith(prefix):
             env['targets']['all_'+prefix].append(targetName)
 
-def sconscript_scanner(localEnv):
+def project_finder(localEnv):
     '''
     This function is called from the following directories:
     - projects\common\
@@ -674,24 +709,31 @@ def sconscript_scanner(localEnv):
     '''
     
     # list subdirectories
-    PATH_TO_PROJECTS = os.path.join('..','..','..','..','projects',os.path.split(os.getcwd())[-1])
-    allsubdirs     = os.listdir(os.path.join(PATH_TO_PROJECTS))
-    subdirs        = [name for name in allsubdirs if os.path.isdir(os.path.join(PATH_TO_PROJECTS,name)) ]
+    
+    if env['toolchain']=='iar-proj':
+        # no VariantDir is used
+        PATH_TO_BOARD_PROJECTS    = os.getcwd()
+    else:
+        # VariantDir is used
+        PATH_TO_BOARD_PROJECTS    = os.path.join('..','..','..','..','projects',os.path.split(os.getcwd())[-1])
+    tempsubdirs                   = os.listdir(PATH_TO_BOARD_PROJECTS)
+    subdirs                       = [name for name in tempsubdirs if os.path.isdir(os.path.join(PATH_TO_BOARD_PROJECTS,name)) ]
     
     # parse dirs and build targets
     for projectDir in subdirs:
         
-        src_dir         = os.path.join(PATH_TO_PROJECTS,projectDir)
+        src_dir         = os.path.join(PATH_TO_BOARD_PROJECTS,projectDir)
         variant_dir     = os.path.join(env['VARDIR'],'projects',projectDir)
         
         added           = False
         targetName      = projectDir[2:]
         
         if  (
-                ('{0}.c'.format(projectDir) in os.listdir(os.path.join(PATH_TO_PROJECTS,projectDir))) and
+                ('{0}.c'.format(projectDir) in os.listdir(os.path.join(PATH_TO_BOARD_PROJECTS,projectDir))) and
                 (localEnv['toolchain']!='iar-proj') and 
                 (localEnv['board']!='python')
             ):
+            # "normal" case
             
             localEnv.VariantDir(
                 src_dir     = src_dir,
@@ -721,9 +763,10 @@ def sconscript_scanner(localEnv):
             added = True
         
         elif (
-                ('{0}.c'.format(projectDir) in os.listdir(os.path.join(PATH_TO_PROJECTS,projectDir))) and
+                ('{0}.c'.format(projectDir) in os.listdir(os.path.join(PATH_TO_BOARD_PROJECTS,projectDir))) and
                 (localEnv['board']=='python')
             ):
+            # Python case
             
             # build the artifacts in a separate directory
             localEnv.VariantDir(
@@ -790,17 +833,13 @@ def sconscript_scanner(localEnv):
             added = True
             
         elif (
-                ('{0}.ewp'.format(projectDir) in os.listdir(os.path.join(PATH_TO_PROJECTS,projectDir))) and
+                ('{0}.ewp'.format(projectDir) in os.listdir(os.path.join(PATH_TO_BOARD_PROJECTS,projectDir))) and
                 (localEnv['toolchain']=='iar-proj')
-             ):
+            ):
+            # iar-proj case
             
-            VariantDir(
-                src_dir     = src_dir,
-                variant_dir = variant_dir,
-            )
-            
-            source = [os.path.join(projectDir,'{0}.ewp'.format(projectDir))]
-        
+            source = [os.path.join(projectDir,'{0}.ewp'.format(projectDir)),]
+                        
             targetAction = localEnv.iarProjBuilder(
                 source  = source,
             )
@@ -811,7 +850,7 @@ def sconscript_scanner(localEnv):
         if added:
             populateTargetGroup(localEnv,targetName)
 
-env.AddMethod(sconscript_scanner, 'SconscriptScanner')
+env.AddMethod(project_finder, 'ProjectFinder')
 
 #============================ board ===========================================
 
@@ -897,7 +936,10 @@ buildEnv.Append(LIBPATH = [openappsVarDir])
 
 # projects
 projectsDir        = os.path.join('#','projects')
-projectsVarDir     = os.path.join(buildEnv['VARDIR'],'projects')
+if env['toolchain']=='iar-proj':
+    projectsVarDir = None
+else:
+    projectsVarDir = os.path.join(buildEnv['VARDIR'],'projects')
 buildEnv.SConscript(
     os.path.join(projectsDir,'SConscript'),
     exports        = {'env': buildEnv},
