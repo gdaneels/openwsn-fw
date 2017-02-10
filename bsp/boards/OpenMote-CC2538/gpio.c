@@ -167,7 +167,7 @@ static void gpio_notify_callback(uint8_t port, uint8_t mask) {
 
   for (i = 0; i < 8; i++) {
     if (mask & (1 << i)) {
-      callback = &gpio_callbacks[(port << 3) + (1 << i)];
+      callback = &gpio_callbacks[(port << 3) + i];
       if((*callback) != NULL) {
         (*callback)();
       }

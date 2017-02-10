@@ -64,11 +64,6 @@ spi_vars_t spi_vars;
 //=========================== public ==========================================
 
 void spi_init(void) {
-  // Enable peripheral except in deep sleep modes (e.g. LPM1, LPM2, LPM3)
-  SysCtrlPeripheralEnable(SPI_PERIPHERAL);
-  SysCtrlPeripheralSleepEnable(SPI_PERIPHERAL);
-  SysCtrlPeripheralDeepSleepDisable(SPI_PERIPHERAL);
-
   // Reset peripheral previous to configuring it
   SSIDisable(SPI_BASE);
 

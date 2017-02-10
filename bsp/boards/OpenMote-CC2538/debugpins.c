@@ -34,82 +34,82 @@
 //=========================== public ==========================================
 
 void debugpins_init(void) {
-  gpio_config_output(BSP_PINA_PORT, (BSP_PINA_4 | BSP_PINA_5));
-  gpio_config_output(BSP_PIND_PORT, (BSP_PIND_3 | BSP_PIND_2 | BSP_PIND_1 | BSP_PIND_0));
+//  gpio_config_output(BSP_PINA_PORT, (BSP_PINA_4 | BSP_PINA_5));
+//  gpio_config_output(BSP_PIND_PORT, (BSP_PIND_3 | BSP_PIND_2 | BSP_PIND_1 | BSP_PIND_0));
 
-  gpio_off(BSP_PINA_PORT, (BSP_PINA_4 | BSP_PINA_5));
-  gpio_off(BSP_PIND_PORT, (BSP_PIND_3 | BSP_PIND_2 | BSP_PIND_1 | BSP_PIND_0));
+//  gpio_off(BSP_PINA_PORT, (BSP_PINA_4 | BSP_PINA_5));
+//  gpio_off(BSP_PIND_PORT, (BSP_PIND_3 | BSP_PIND_2 | BSP_PIND_1 | BSP_PIND_0));
 }
 
 // PA4
 void debugpins_frame_toggle(void) {
-  gpio_toggle(BSP_PINA_PORT, BSP_PINA_4);
+//  gpio_toggle(BSP_PINA_PORT, BSP_PINA_4);
 }
 
 void debugpins_frame_clr(void) {
-  gpio_off(BSP_PINA_PORT, BSP_PINA_4);
+//  gpio_off(BSP_PINA_PORT, BSP_PINA_4);
 }
 
 void debugpins_frame_set(void) {
-  gpio_on(BSP_PINA_PORT, BSP_PINA_4);
+//  gpio_on(BSP_PINA_PORT, BSP_PINA_4);
 }
 
 void debugpins_slot_toggle(void) {
-	gpio_toggle(BSP_PIND_PORT, BSP_PIND_3);
+//	gpio_toggle(BSP_PIND_PORT, BSP_PIND_3);
 }
 
 void debugpins_slot_clr(void) {
-	gpio_off(BSP_PIND_PORT, BSP_PIND_3);
+//	gpio_off(BSP_PIND_PORT, BSP_PIND_3);
 }
 
 void debugpins_slot_set(void) {
-	gpio_on(BSP_PIND_PORT, BSP_PIND_3);
+//	gpio_on(BSP_PIND_PORT, BSP_PIND_3);
 }
 
 void debugpins_fsm_toggle(void) {
-	gpio_toggle(BSP_PIND_PORT, BSP_PIND_2);
+//	gpio_toggle(BSP_PIND_PORT, BSP_PIND_2);
 }
 
 void debugpins_fsm_clr(void) {
-	gpio_off(BSP_PIND_PORT, BSP_PIND_2);
+//	gpio_off(BSP_PIND_PORT, BSP_PIND_2);
 }
 
 void debugpins_fsm_set(void) {
-	gpio_on(BSP_PIND_PORT, BSP_PIND_2);
+//	gpio_on(BSP_PIND_PORT, BSP_PIND_2);
 }
 
 void debugpins_task_toggle(void) {
-	gpio_toggle(BSP_PIND_PORT,BSP_PIND_1);
+//	gpio_toggle(BSP_PIND_PORT,BSP_PIND_1);
 }
 
 void debugpins_task_clr(void) {
-	gpio_off(BSP_PIND_PORT, BSP_PIND_1);
+//	gpio_off(BSP_PIND_PORT, BSP_PIND_1);
 }
 
 void debugpins_task_set(void) {
-	gpio_on(BSP_PIND_PORT, BSP_PIND_1);
+//	gpio_on(BSP_PIND_PORT, BSP_PIND_1);
 }
 
 void debugpins_isr_toggle(void) {
-	gpio_toggle(BSP_PINA_PORT, BSP_PINA_5);
+//	gpio_toggle(BSP_PINA_PORT, BSP_PINA_5);
 }
 
 void debugpins_isr_clr(void) {
-	gpio_off(BSP_PINA_PORT, BSP_PINA_5);
+//	gpio_off(BSP_PINA_PORT, BSP_PINA_5);
 }
 
 void debugpins_isr_set(void) {
-	gpio_on(BSP_PINA_PORT, BSP_PINA_5);
+//	gpio_on(BSP_PINA_PORT, BSP_PINA_5);
 }
 
 void debugpins_radio_toggle(void) {
-	gpio_toggle(BSP_PIND_PORT, BSP_PIND_0);
+//	gpio_toggle(BSP_PIND_PORT, BSP_PIND_0);
 }
 
 void debugpins_radio_clr(void) {
-	gpio_off(BSP_PIND_PORT, BSP_PIND_0);
+//	gpio_off(BSP_PIND_PORT, BSP_PIND_0);
 }
 
 void debugpins_radio_set(void) {
-	gpio_on(BSP_PIND_PORT, BSP_PIND_0);
+//	gpio_on(BSP_PIND_PORT, BSP_PIND_0);
 }

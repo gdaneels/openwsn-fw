@@ -29,7 +29,7 @@ sht21 = localEnv.SConscript(
 )
 
 cc1200 = localEnv.SConscript(
-    os.path.join('#','bsp','chips','cc1200','SConscript'),
+    os.path.join('#','bsp','chips','cc1200-OpenMote','SConscript'),
     variant_dir = 'cc1200',
     exports     = {'env': env},
 )
@@ -45,7 +45,7 @@ localEnv.Append(
         os.path.join('#','bsp','chips','adxl346'),
         os.path.join('#','bsp','chips','max44009'),
         os.path.join('#','bsp','chips','sht21'),
-        os.path.join('#','bsp','chips','cc1200')
+        os.path.join('#','bsp','chips','cc1200-OpenMote')
     ],
 )
 

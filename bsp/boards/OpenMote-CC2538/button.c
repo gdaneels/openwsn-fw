@@ -24,6 +24,7 @@
 
 #define BSP_BUTTON_PORT                 ( GPIO_C_PORT )
 #define BSP_BUTTON_USER                 ( GPIO_PIN_3 )
+#define BSP_BUTTON_USER_NR              ( 3 )
 #define BSP_BUTTON_EDGE                 ( GPIO_FALLING_EDGE )
 
 #define CC2538_FLASH_ADDRESS            ( 0x0027F800 )
@@ -47,7 +48,7 @@ void button_init(void) {
   for (i = 0xFFFFF; i != 0; i--);
 
   /* Register the interrupt */
-  gpio_register_callback(BSP_BUTTON_PORT, BSP_BUTTON_USER, &button_handler);
+  gpio_register_callback(BSP_BUTTON_PORT, BSP_BUTTON_USER_NR, &button_handler);
 
   /* Clear and enable the interrupt */
   gpio_enable_interrupt(BSP_BUTTON_PORT, BSP_BUTTON_USER);

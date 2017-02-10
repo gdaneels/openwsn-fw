@@ -160,8 +160,6 @@ void radio_loadPacket(uint8_t* packet, uint16_t len) {
     }else{
     //error
     }
-    
-
 }
 
 void radio_txEnable(void) {

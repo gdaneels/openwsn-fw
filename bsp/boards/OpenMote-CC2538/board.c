@@ -70,9 +70,9 @@ void board_init(void) {
   bsp_timer_init();
   radiotimer_init();
   uart_init();
-  radio_init();
   i2c_init();
   spi_init();
+  radio_init();
   sensors_init();
 }
 
@@ -123,8 +123,10 @@ static void SysCtrlRunSetting(void) {
   SysCtrlPeripheralDisable(SYS_CTRL_PERIPH_GPT1);
   SysCtrlPeripheralDisable(SYS_CTRL_PERIPH_GPT3);
 
-  /* Disable SSI 0, 1 when running */
-  SysCtrlPeripheralDisable(SYS_CTRL_PERIPH_SSI0);
+  /* Enable SSI 0 when running */
+  SysCtrlPeripheralEnable(SYS_CTRL_PERIPH_SSI0);
+
+  /* Disable SSI 1 when running */
   SysCtrlPeripheralDisable(SYS_CTRL_PERIPH_SSI1);
 
   /* Disable UART1 when running */
@@ -147,8 +149,10 @@ static void SysCtrlSleepSetting(void) {
   SysCtrlPeripheralSleepDisable(SYS_CTRL_PERIPH_GPT1);
   SysCtrlPeripheralSleepDisable(SYS_CTRL_PERIPH_GPT3);
 
-  /* Disable SSI 0, 1 during sleep */
-  SysCtrlPeripheralSleepDisable(SYS_CTRL_PERIPH_SSI0);
+  /* Disable SSI 0 during sleep */
+  SysCtrlPeripheralSleepEnable(SYS_CTRL_PERIPH_SSI0);
+
+  /* Disable SSI 1 during sleep */
   SysCtrlPeripheralSleepDisable(SYS_CTRL_PERIPH_SSI1);
 
   /* Disable UART 0, 1 during sleep */

@@ -28,12 +28,15 @@
 
 #define CC1200_GPIO0_PORT                 ( GPIO_D_PORT )
 #define CC1200_GPIO0_PIN                  ( GPIO_PIN_3 )
+#define CC1200_GPIO0_PIN_NR               ( 3 )
 
 #define CC1200_GPIO2_PORT                 ( GPIO_D_PORT )
 #define CC1200_GPIO2_PIN                  ( GPIO_PIN_1 )
+#define CC1200_GPIO2_PIN_NR               ( 1 )
 
 #define CC1200_GPIO3_PORT                 ( GPIO_D_PORT )
 #define CC1200_GPIO3_PIN                  ( GPIO_PIN_0 )
+#define CC1200_GPIO3_PIN_NR               ( 0 )
 
 #define CC1200_SPI_BUFFER_LENGTH    	  ( 128 )
 
@@ -57,7 +60,7 @@ void cc1200_arch_gpio0_setup(bool rising) {
   } else {
     gpio_config_input(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN, GPIO_FALLING_EDGE);
   }
-  gpio_register_callback(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN, &cc1200_arch_gpio0_interrupt);
+  gpio_register_callback(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN_NR, &cc1200_arch_gpio0_interrupt);
 }
 
 void cc1200_arch_gpio0_enable(void) {
@@ -78,7 +81,7 @@ void cc1200_arch_gpio2_setup(bool rising) {
   } else {
     gpio_config_input(CC1200_GPIO2_PORT, CC1200_GPIO2_PIN, GPIO_FALLING_EDGE);
   }
-  gpio_register_callback(CC1200_GPIO2_PORT, CC1200_GPIO2_PIN, &cc1200_arch_gpio2_interrupt);
+  gpio_register_callback(CC1200_GPIO2_PORT, CC1200_GPIO2_PIN_NR, &cc1200_arch_gpio2_interrupt);
 }
 
 void cc1200_arch_gpio2_enable(void) {
@@ -99,7 +102,7 @@ void cc1200_arch_gpio3_setup(bool rising) {
   } else {
     gpio_config_input(CC1200_GPIO3_PORT, CC1200_GPIO3_PIN, GPIO_FALLING_EDGE);
   }
-  gpio_register_callback(CC1200_GPIO3_PORT, CC1200_GPIO3_PIN, &cc1200_arch_gpio3_interrupt);
+  gpio_register_callback(CC1200_GPIO3_PORT, CC1200_GPIO3_PIN_NR, &cc1200_arch_gpio3_interrupt);
 }
 
 void cc1200_arch_gpio3_enable(void) {

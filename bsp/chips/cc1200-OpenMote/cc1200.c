@@ -37,10 +37,8 @@
 
 /* Read out packet on falling edge of GPIO0 */
 #define GPIO0_IOCFG                     CC1200_IOCFG_PKT_SYNC_RXTX
-/* Arbitrary configuration for GPIO2 */
-#define GPIO2_IOCFG                     CC1200_IOCFG_MARC_2PIN_STATUS_0
-/* Arbitrary configuration for GPIO3 */
-#define GPIO3_IOCFG                     CC1200_IOCFG_MARC_2PIN_STATUS_0
+/* Packet starts on rising edge of GPIO2 */
+#define GPIO2_IOCFG                     CC1200_IOCFG_PKT_SYNC_RXTX
 
 #define STATE_USES_MARC_STATE           ( 0 )
 #if STATE_USES_MARC_STATE
@@ -77,6 +75,16 @@
 
 //=========================== variables =======================================
 
+// TODO: Clean up this temporary code that is required to handle the interrupt callback
+#include "radio.h"
+#include "radiotimer.h"
+typedef struct {
+   radiotimer_capture_cbt    startFrame_cb;
+   radiotimer_capture_cbt    endFrame_cb;
+   radio_state_t             state; 
+} radio_vars_t;
+extern radio_vars_t radio_vars;
+
 extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
 static uint8_t rf_flags = 0;
@@ -104,10 +112,8 @@ void cc1200_init(void) {
       /* Initialize the GPIOs */
       cc1200_arch_gpio0_setup(false);
       cc1200_arch_gpio0_enable();
-      cc1200_arch_gpio2_setup(false);
+      cc1200_arch_gpio2_setup(true);
       cc1200_arch_gpio2_enable();
-      cc1200_arch_gpio3_setup(false);
-      cc1200_arch_gpio3_enable();
 
       /* Write the initial configuration */
       cc1200_configure();
@@ -145,9 +151,6 @@ bool cc1200_on(void) {
 
     /* After a reset the chip is in IDLE mode */
     rf_flags |= RF_ON;
-
-    /* Radio is IDLE now, re-configure GPIO0 for regular operation */
-    cc1200_single_write(CC1200_IOCFG0, GPIO0_IOCFG);
   }
 
   return true;
@@ -161,9 +164,6 @@ bool cc1200_off(void) {
   if (rf_flags & RF_ON) {
     /* Put radio in idle mode */
     cc1200_idle();
-
-    /* Re-configure GPIO0 for CHIP_RDYn as it is required to detect CHIP_RDYn */
-    cc1200_single_write(CC1200_IOCFG0, CC1200_IOCFG_RXFIFO_CHIP_RDY_N);
 
     /* Put the radio if off */
     cc1200_strobe(CC1200_SPWD);
@@ -197,7 +197,7 @@ void cc1200_idle(void) {
   cc1200_strobe(CC1200_SIDLE);
 
   /* Busy-wait until the CC1200 is in IDLE mode */
-  while (cc1200_state() != CC1200_SIDLE) {
+  while (cc1200_state() != STATE_IDLE) {
       cc1200_arch_clock_delay(100);
   }
 }
@@ -236,7 +236,6 @@ void cc1200_configure(void) {
     cc1200_single_write(CC1200_AGC_GAIN_ADJUST, (int8_t)CC1200_RSSI_OFFSET);
 
     /* GPIO configuration */
-    cc1200_single_write(CC1200_IOCFG3, GPIO3_IOCFG);
     cc1200_single_write(CC1200_IOCFG2, GPIO2_IOCFG);
     cc1200_single_write(CC1200_IOCFG0, GPIO0_IOCFG);
 }
@@ -284,13 +283,8 @@ void cc1200_set_tx_power(int8_t tx_power_dbm) {
  * Put the radio in transmit mode.
  */
 void cc1200_transmit(void) {
-    uint8_t state = cc1200_state();
-
     /* Enable synthetiser */
     cc1200_strobe(CC1200_SFSTXON);
-
-    /* Configure GPIO0 to detect TX state */
-    cc1200_single_write(CC1200_IOCFG0, CC1200_IOCFG_MARC_2PIN_STATUS_0);
 
     /* Enable transmission */
     cc1200_strobe(CC1200_STX);
@@ -300,25 +294,23 @@ void cc1200_transmit(void) {
  * Put the radio in receive mode.
  */
 void cc1200_receive(void) {
-    uint8_t state = cc1200_state();
+    cc1200_on();
+    cc1200_idle();
 
-    if (state == STATE_IDLE) {
+    /* Calibrate before entering RX */
+    cc1200_calibrate();
 
-        /* Calibrate before entering RX */
-        cc1200_calibrate();
+    rf_flags &= ~RF_RX_PROCESSING_PKT;
 
-        rf_flags &= ~RF_RX_PROCESSING_PKT;
+    /* Empty the receive buffer */
+    cc1200_strobe(CC1200_SFRX);
 
-        /* Empty the receive buffer */
-        cc1200_strobe(CC1200_SFRX);
+    /* Go to receive mode */
+    cc1200_strobe(CC1200_SRX);
 
-        /* Go to receive mode */
-        cc1200_strobe(CC1200_SRX);
-
-        /* Wait until radio is in receive mode */
-        while (cc1200_state() != STATE_RX) {
-            cc1200_arch_clock_delay(100);
-        }
+    /* Wait until radio is in receive mode */
+    while (cc1200_state() != STATE_RX) {
+        cc1200_arch_clock_delay(100);
     }
 }
 
@@ -372,12 +364,33 @@ bool cc1200_set_channel(uint8_t channel) {
  * Load a packet into the radio.
  */
 void cc1200_load_packet(uint8_t* buffer, uint16_t length) {
+    cc1200_strobe(CC1200_SFTX);
+
+    // Busy-wait until the CC1200 is in IDLE mode
+    while (cc1200_state() != STATE_IDLE) {
+        cc1200_arch_clock_delay(10);
+    }
+
+    cc1200_single_write(CC1200_TXFIFO, length);
+    cc1200_burst_write(CC1200_TXFIFO, buffer, length);
 }
 
 /**
  * Get a packet that has been received by the radio.
  */
-void cc1200_get_packet(uint8_t* buffer, uint16_t length) {
+uint8_t cc1200_get_packet(uint8_t* buffer, uint16_t maxLength) {
+
+    uint16_t length = cc1200_single_read(CC1200_NUM_RXBYTES);
+
+    // TODO: Figure out why burst read failed here
+    // Read the received packet from the RXFIFO
+    for (unsigned int i = 0; i < length; ++i)
+        buffer[i] = cc1200_single_read(CC1200_RXFIFO);
+
+    // Flush the buffer and listen for the next packet
+    cc1200_receive();
+
+    return length;
 }
 
 //====================== private =========================
@@ -387,11 +400,9 @@ void cc1200_get_packet(uint8_t* buffer, uint16_t length) {
  */
 static uint8_t cc1200_strobe(uint8_t strobe) {
   uint8_t ret;
-
   cc1200_arch_spi_select();
   ret = cc1200_arch_spi_rw_byte(strobe);
   cc1200_arch_spi_deselect();
-
   return ret;
 }
 
@@ -498,13 +509,22 @@ void cc1200_write_register_settings(const cc1200_register_settings_t* settings, 
 //====================== callbacks =======================
 
 void cc1200_gpio0_interrupt(void) {
-
+    // TODO: Find out why falling edge of PKT_SYNC_RXTX seems to triggered twice for each time we see a rising edge (gpio2). For now, we ignore one of the two interrupts.
+    //       When transmitting, during the first interrupt the code is in STATE_TX and there are still bytes in the TXFIFO,
+    //       the second interrupt takes place in STATE_IDLE when the TXFIFO is empty.
+    //       For receiving both occur in STATE_IDLE? Buffer is empty during first interrupt, but filled during second one.
+    if ((cc1200_state() == STATE_TX) || (cc1200_single_read(CC1200_NUM_RXBYTES) > 0)) {
+        if (radio_vars.endFrame_cb != NULL) {
+            radio_vars.endFrame_cb(radiotimer_getCapturedTime());
+        }
+    }
 }
 
 void cc1200_gpio2_interrupt(void) {
-
+    if (radio_vars.startFrame_cb != NULL) {
+        radio_vars.startFrame_cb(radiotimer_getCapturedTime());
+    }
 }
 
 void cc1200_gpio3_interrupt(void) {
-
 }

@@ -51,6 +51,7 @@
  */
 static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_IOCFG2,            0x06},
+  {CC1200_IOCFG0,            0x06},
   {CC1200_SYNC3,             0x6E},
   {CC1200_SYNC2,             0x4E},
   {CC1200_SYNC1,             0x90},
@@ -75,7 +76,7 @@ static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_AGC_CFG0,          0x90},
   {CC1200_FIFO_CFG,          0x00},
   {CC1200_FS_CFG,            0x12},
-  {CC1200_PKT_CFG2,          0x24},
+  {CC1200_PKT_CFG2,          0x04},
   {CC1200_PKT_CFG0,          0x20},
   {CC1200_PKT_LEN,           0xFF},
   {CC1200_IF_MIX_CFG,        0x18},

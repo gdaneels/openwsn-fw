@@ -17,6 +17,14 @@
 
 //=========================== variables =======================================
 
+typedef struct {
+   radiotimer_capture_cbt    startFrame_cb;
+   radiotimer_capture_cbt    endFrame_cb;
+   radio_state_t             state; 
+} radio_vars_t;
+
+radio_vars_t radio_vars;
+
 //=========================== prototypes ======================================
 
 void radio_spiStrobe     (uint8_t strobe, cc1200_status_t* statusRead);
@@ -31,7 +39,6 @@ void radio_spiReadRxFifo (                cc1200_status_t* statusRead, uint8_t* 
 
 void radio_init(void) {
   cc1200_init();
-
 }
 
 void radio_setOverflowCb(radiotimer_compare_cbt cb) {
@@ -43,11 +50,11 @@ void radio_setCompareCb(radiotimer_compare_cbt cb) {
 }
 
 void radio_setStartFrameCb(radiotimer_capture_cbt cb) {
-   radiotimer_setStartFrameCb(cb);
+   radio_vars.startFrame_cb  = cb;
 }
 
 void radio_setEndFrameCb(radiotimer_capture_cbt cb) {
-   radiotimer_setEndFrameCb(cb);
+   radio_vars.endFrame_cb    = cb;
 }
 
 //==== reset
@@ -84,13 +91,29 @@ void radio_rfOn(void) {
 }
 
 void radio_rfOff(void) {
+
+    // change state
+    radio_vars.state = RADIOSTATE_TURNING_OFF;
     cc1200_off();
+
+    // wiggle debug pin
+    debugpins_radio_clr();
+    leds_radio_off();
+
+    // change state
+    radio_vars.state = RADIOSTATE_RFOFF;
 }
 
 //==== TX
 
-void radio_loadPacket(uint8_t* packet, uint8_t len) {
+void radio_loadPacket(uint8_t* packet, uint16_t len) {
     cc1200_load_packet(packet, len);
+}
+
+void radio_txEnable() {
+    // wiggle debug pin
+    debugpins_radio_set();
+    leds_radio_on();
 }
 
 void radio_txNow(void) {
@@ -101,10 +124,14 @@ void radio_txNow(void) {
 
 void radio_rxEnable(void) {
     cc1200_receive();
+
+    // wiggle debug pin
+    debugpins_radio_set();
+    leds_radio_on();
 }
 
 void radio_rxNow(void) {
-
+    // nothing to do, the radio is already listening.
 }
 
 void radio_getReceivedFrame(uint8_t* bufRead,
@@ -113,6 +140,10 @@ void radio_getReceivedFrame(uint8_t* bufRead,
                              int8_t* rssi,
                             uint8_t* lqi,
                                bool* crc) {
+
+    *lenRead = cc1200_get_packet(bufRead, maxBufLen);
+
+    // TODO: Finish this function
 }
 
 //====================== private =========================
