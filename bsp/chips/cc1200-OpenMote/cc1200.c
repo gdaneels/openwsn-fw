@@ -382,10 +382,8 @@ uint8_t cc1200_get_packet(uint8_t* buffer, uint16_t maxLength) {
 
     uint16_t length = cc1200_single_read(CC1200_NUM_RXBYTES);
 
-    // TODO: Figure out why burst read failed here
     // Read the received packet from the RXFIFO
-    for (unsigned int i = 0; i < length; ++i)
-        buffer[i] = cc1200_single_read(CC1200_RXFIFO);
+    cc1200_burst_read(CC1200_RXFIFO, buffer, length);
 
     // Flush the buffer and listen for the next packet
     cc1200_receive();
@@ -441,7 +439,6 @@ static void cc1200_burst_read(uint16_t address, uint8_t *data, uint8_t length) {
   }
 
   cc1200_arch_spi_rw(data, NULL, length);
-
   cc1200_arch_spi_deselect();
 }
 
