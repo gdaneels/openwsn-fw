@@ -84,6 +84,7 @@ typedef struct {
    radio_state_t             state; 
 } radio_vars_t;
 extern radio_vars_t radio_vars;
+static bool firstInterrupt = true;
 
 extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
@@ -506,21 +507,23 @@ void cc1200_write_register_settings(const cc1200_register_settings_t* settings, 
 //====================== callbacks =======================
 
 void cc1200_gpio0_interrupt(void) {
-    // TODO: Find out why falling edge of PKT_SYNC_RXTX seems to triggered twice for each time we see a rising edge (gpio2). For now, we ignore one of the two interrupts.
+    // TODO: Find out why falling edge of PKT_SYNC_RXTX seems to triggered twice for each time we see a rising edge (gpio2). For now, we ignore the first interrupt.
     //       When transmitting, during the first interrupt the code is in STATE_TX and there are still bytes in the TXFIFO,
     //       the second interrupt takes place in STATE_IDLE when the TXFIFO is empty.
     //       For receiving both occur in STATE_IDLE? Buffer is empty during first interrupt, but filled during second one.
-    if ((cc1200_state() == STATE_TX) || (cc1200_single_read(CC1200_NUM_RXBYTES) > 0)) {
+    if (!firstInterrupt) {
         if (radio_vars.endFrame_cb != NULL) {
             radio_vars.endFrame_cb(radiotimer_getCapturedTime());
         }
     }
+    firstInterrupt = false;
 }
 
 void cc1200_gpio2_interrupt(void) {
     if (radio_vars.startFrame_cb != NULL) {
         radio_vars.startFrame_cb(radiotimer_getCapturedTime());
     }
+    firstInterrupt = true;
 }
 
 void cc1200_gpio3_interrupt(void) {
