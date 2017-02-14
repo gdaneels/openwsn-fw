@@ -11,6 +11,9 @@
 #include "cc1200_regs.h"
 #include "cc1200_arch.h"
 
+#include "gpio.h"
+#include <source/gpio.h>
+
 //=========================== defines =========================================
 
 /* 868.325 MHz */
@@ -35,10 +38,12 @@
 #define CC1200_RSSI_OFFSET              ( -81 )
 #define CC1200_FREQ_OFFSET              ( 0 )
 
-/* Read out packet on falling edge of GPIO0 */
+/* Packet start on rising edge of GPIO0 and is read out on falling edge of GPIO0 */
 #define GPIO0_IOCFG                     CC1200_IOCFG_PKT_SYNC_RXTX
-/* Packet starts on rising edge of GPIO2 */
-#define GPIO2_IOCFG                     CC1200_IOCFG_PKT_SYNC_RXTX
+
+#define CC1200_GPIO0_PORT               ( GPIO_D_PORT )
+#define CC1200_GPIO0_PIN                ( GPIO_PIN_3 )
+#define CC1200_GPIO0_PIN_NR             ( 3 )
 
 #define STATE_USES_MARC_STATE           ( 0 )
 #if STATE_USES_MARC_STATE
@@ -84,7 +89,6 @@ typedef struct {
    radio_state_t             state; 
 } radio_vars_t;
 extern radio_vars_t radio_vars;
-static bool firstInterrupt = true;
 
 extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
@@ -111,10 +115,9 @@ void cc1200_init(void) {
       cc1200_arch_init();
 
       /* Initialize the GPIOs */
-      cc1200_arch_gpio0_setup(false);
-      cc1200_arch_gpio0_enable();
-      cc1200_arch_gpio2_setup(true);
-      cc1200_arch_gpio2_enable();
+      gpio_config_input(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN, GPIO_BOTH_EDGES);
+      gpio_register_callback(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN_NR, &cc1200_gpio0_interrupt);
+      gpio_enable_interrupt(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN);
 
       /* Write the initial configuration */
       cc1200_configure();
@@ -237,7 +240,6 @@ void cc1200_configure(void) {
     cc1200_single_write(CC1200_AGC_GAIN_ADJUST, (int8_t)CC1200_RSSI_OFFSET);
 
     /* GPIO configuration */
-    cc1200_single_write(CC1200_IOCFG2, GPIO2_IOCFG);
     cc1200_single_write(CC1200_IOCFG0, GPIO0_IOCFG);
 }
 
@@ -507,23 +509,20 @@ void cc1200_write_register_settings(const cc1200_register_settings_t* settings, 
 //====================== callbacks =======================
 
 void cc1200_gpio0_interrupt(void) {
-    // TODO: Find out why falling edge of PKT_SYNC_RXTX seems to triggered twice for each time we see a rising edge (gpio2). For now, we ignore the first interrupt.
-    //       When transmitting, during the first interrupt the code is in STATE_TX and there are still bytes in the TXFIFO,
-    //       the second interrupt takes place in STATE_IDLE when the TXFIFO is empty.
-    //       For receiving both occur in STATE_IDLE? Buffer is empty during first interrupt, but filled during second one.
-    if (!firstInterrupt) {
+    bool high = gpio_read(CC1200_GPIO0_PORT, CC1200_GPIO0_PIN);
+    if (high) {
+        if (radio_vars.startFrame_cb != NULL) {
+            radio_vars.startFrame_cb(radiotimer_getCapturedTime());
+        }
+    }
+    else {
         if (radio_vars.endFrame_cb != NULL) {
             radio_vars.endFrame_cb(radiotimer_getCapturedTime());
         }
     }
-    firstInterrupt = false;
 }
 
 void cc1200_gpio2_interrupt(void) {
-    if (radio_vars.startFrame_cb != NULL) {
-        radio_vars.startFrame_cb(radiotimer_getCapturedTime());
-    }
-    firstInterrupt = true;
 }
 
 void cc1200_gpio3_interrupt(void) {
