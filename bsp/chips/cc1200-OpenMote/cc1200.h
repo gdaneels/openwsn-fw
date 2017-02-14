@@ -51,7 +51,12 @@ void cc1200_set_tx_power(int8_t tx_power_dbm);
 bool cc1200_set_channel(uint8_t channel);
 
 void cc1200_load_packet(uint8_t* buffer, uint16_t length);
-uint8_t cc1200_get_packet(uint8_t* buffer, uint16_t length);
+void cc1200_get_packet(uint8_t* bufRead,
+                       uint8_t* lenRead,
+                       uint8_t  maxBufLen,
+                        int8_t* rssi,
+                       uint8_t* lqi,
+                          bool* crc);
 
 void cc1200_gpio0_interrupt(void);
 void cc1200_gpio2_interrupt(void);

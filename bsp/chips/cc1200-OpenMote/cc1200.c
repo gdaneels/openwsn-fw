@@ -78,6 +78,10 @@
 /* SPI was locked when calling RX interrupt, let the pollhandler do the job */
 #define RF_POLL_RX_INTERRUPT            0x20
 
+/* Bit Masks for the last byte in the RX FIFO */
+#define CRC_BIT_MASK 0x80
+#define LQI_BIT_MASK 0x7F
+
 //=========================== variables =======================================
 
 // TODO: Clean up this temporary code that is required to handle the interrupt callback
@@ -381,17 +385,36 @@ void cc1200_load_packet(uint8_t* buffer, uint16_t length) {
 /**
  * Get a packet that has been received by the radio.
  */
-uint8_t cc1200_get_packet(uint8_t* buffer, uint16_t maxLength) {
+void cc1200_get_packet(uint8_t* buffer,
+                       uint8_t* lenRead,
+                       uint8_t  maxLength,
+                        int8_t* rssi,
+                       uint8_t* lqi,
+                          bool* crc) {
 
+    uint8_t crc_corr;
     uint16_t length = cc1200_single_read(CC1200_NUM_RXBYTES);
 
-    // Read the received packet from the RXFIFO
-    cc1200_burst_read(CC1200_RXFIFO, buffer, length);
+    if ((length >= 3) && (length <= 1+125+2))
+    {
+        // Read the length byte
+        uint8_t len = cc1200_single_read(CC1200_RXFIFO);
+        if (len == length - 3)
+        {
+            // Read the received packet
+            cc1200_burst_read(CC1200_RXFIFO, buffer, len);
+
+            // Read the 2 bytes FCS
+            *rssi    = cc1200_single_read(CC1200_RXFIFO);
+            crc_corr = cc1200_single_read(CC1200_RXFIFO);
+            *lqi     = crc_corr & LQI_BIT_MASK;
+            *crc     = crc_corr & CRC_BIT_MASK;
+            *lenRead = len;
+        }
+    }
 
     // Flush the buffer and listen for the next packet
     cc1200_receive();
-
-    return length;
 }
 
 //====================== private =========================

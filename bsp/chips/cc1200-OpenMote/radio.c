@@ -84,6 +84,7 @@ PORT_TIMER_WIDTH radio_getTimerPeriod() {
 //==== RF admin
 
 void radio_setFrequency(uint8_t frequency) {
+    // TODO
 }
 
 void radio_rfOn(void) {
@@ -141,9 +142,7 @@ void radio_getReceivedFrame(uint8_t* bufRead,
                             uint8_t* lqi,
                                bool* crc) {
 
-    *lenRead = cc1200_get_packet(bufRead, maxBufLen);
-
-    // TODO: Finish this function
+    cc1200_get_packet(bufRead, lenRead, maxBufLen, rssi, lqi, crc);
 }
 
 //====================== private =========================
