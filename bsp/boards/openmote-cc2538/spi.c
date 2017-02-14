@@ -113,22 +113,34 @@ void spi_txrx(uint8_t*     bufTx,
   // Wait until all bytes are transmitted
   while (spi_vars.txBytesLeft > 0) {
     // Push a byte
-    SSIDataPut(SPI_BASE, *spi_vars.pNextTxByte++);
+    SSIDataPut(SPI_BASE, *spi_vars.pNextTxByte);
 
     // Wait until it is complete
     while (SSIBusy(SPI_BASE))
       ;
 
-    // Read a byte
-    SSIDataGet(SPI_BASE, &data);
-
-    // Save the byte in the buffer, but
-    // skip the first one since it's nonsense
-    if (spi_vars.numTxedBytes > 0 || lenbufTx == 1) {
-      *spi_vars.pNextRxByte++ = data;
+    // Save the byte just received in the RX buffer
+    switch (returnType) {
+        uint32_t data;
+        case SPI_FIRSTBYTE:
+            if (spi_vars.numTxedBytes==0) {
+                SSIDataGet(SPI_BASE, &data);
+                *spi_vars.pNextRxByte = data;
+            }
+            break;
+        case SPI_BUFFER:
+            SSIDataGet(SPI_BASE, &data);
+            *spi_vars.pNextRxByte = data;
+            spi_vars.pNextRxByte++;
+            break;
+        case SPI_LASTBYTE:
+            SSIDataGet(SPI_BASE, &data);
+            *spi_vars.pNextRxByte = data;
+            break;
     }
 
     // one byte less to go
+    spi_vars.pNextTxByte++;
     spi_vars.numTxedBytes++;
     spi_vars.txBytesLeft--;
   }
