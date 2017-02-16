@@ -409,7 +409,7 @@ void cc1200_get_packet(uint8_t* buffer,
             crc_corr = cc1200_single_read(CC1200_RXFIFO);
             *lqi     = crc_corr & LQI_BIT_MASK;
             *crc     = crc_corr & CRC_BIT_MASK;
-            *lenRead = len;
+            *lenRead = len + 2;
         }
     }
 
