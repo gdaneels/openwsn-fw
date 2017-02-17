@@ -378,13 +378,7 @@ bool cc1200_set_channel(uint8_t channel) {
  * Load a packet into the radio.
  */
 void cc1200_load_packet(uint8_t* buffer, uint16_t length) {
-    cc1200_strobe(CC1200_SFTX);
-
-    // Busy-wait until the CC1200 is in IDLE mode
-    while (cc1200_state() != STATE_IDLE) {
-        cc1200_arch_clock_delay(10);
-    }
-
+    cc1200_idle();
     cc1200_single_write(CC1200_TXFIFO, length-2);
     cc1200_burst_write(CC1200_TXFIFO, buffer, length-2);
 }
