@@ -98,9 +98,6 @@ extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
 static uint8_t rf_flags = 0;
 
-static bool    rf_receiving = true;
-static uint8_t rf_receive_buffer[128];
-static uint8_t rf_receive_buffer_size = 0;
 
 //=========================== prototypes ======================================
 
@@ -178,7 +175,8 @@ bool cc1200_off(void) {
     cc1200_idle();
 
     /* Put the radio if off */
-    cc1200_strobe(CC1200_SPWD);
+//    cc1200_strobe(CC1200_SPWD);
+//    cc1200_strobe(CC1200_SXOFF);
 
     /* Clear all but the initialized flag */
     rf_flags = RF_INITIALIZED;
@@ -297,8 +295,6 @@ void cc1200_transmit(void) {
     /* Enable synthetiser */
     cc1200_strobe(CC1200_SFSTXON);
 
-    rf_receiving = false;
-
     /* Enable transmission */
     cc1200_strobe(CC1200_STX);
 }
@@ -314,7 +310,6 @@ void cc1200_receive(void) {
     cc1200_calibrate();
 
     rf_flags &= ~RF_RX_PROCESSING_PKT;
-    rf_receiving = true;
 
     /* Empty the receive buffer */
     cc1200_strobe(CC1200_SFRX);
@@ -379,6 +374,7 @@ bool cc1200_set_channel(uint8_t channel) {
  */
 void cc1200_load_packet(uint8_t* buffer, uint16_t length) {
     cc1200_idle();
+
     cc1200_single_write(CC1200_TXFIFO, length-2);
     cc1200_burst_write(CC1200_TXFIFO, buffer, length-2);
 }
@@ -394,21 +390,20 @@ void cc1200_get_packet(uint8_t* buffer,
                           bool* crc) {
 
     uint8_t crc_corr;
-    uint16_t length = rf_receive_buffer_size;
+    uint16_t length = cc1200_single_read(CC1200_NUM_RXBYTES);
 
     if ((length >= 3) && (length <= 1+125+2))
     {
         // Read the length byte
-        uint8_t len = rf_receive_buffer[0];
+        uint8_t len = cc1200_single_read(CC1200_RXFIFO);
         if (len == length - 3)
         {
             // Read the received packet
-            for (unsigned int i = 0; i < len; ++i)
-                buffer[i] = rf_receive_buffer[1+i];
+            cc1200_burst_read(CC1200_RXFIFO, buffer, len);
 
             // Read the 2 bytes FCS
-            *rssi    = rf_receive_buffer[length-2];
-            crc_corr = rf_receive_buffer[length-1];
+            *rssi    = cc1200_single_read(CC1200_RXFIFO);
+            crc_corr = cc1200_single_read(CC1200_RXFIFO);
             *lqi     = crc_corr & LQI_BIT_MASK;
             *crc     = crc_corr & CRC_BIT_MASK;
             *lenRead = len + 2;
@@ -539,19 +534,9 @@ void cc1200_gpio2_interrupt(void) {
         if (radio_vars.startFrame_cb != NULL) {
             radio_vars.startFrame_cb(radiotimer_getCapturedTime());
         }
-
-        rf_receive_buffer_size = 0;
     }
     else {
         if (radio_vars.endFrame_cb != NULL) {
-
-            // Store the buffer when receiving it, so that it doesn't matter that the radio is turned off or the buffer cleared before reading the packet
-            if (rf_receiving)
-            {
-                rf_receive_buffer_size = cc1200_single_read(CC1200_NUM_RXBYTES);
-                cc1200_burst_read(CC1200_RXFIFO, rf_receive_buffer, rf_receive_buffer_size);
-            }
-
             radio_vars.endFrame_cb(radiotimer_getCapturedTime());
         }
     }
