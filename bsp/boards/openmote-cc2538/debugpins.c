@@ -9,8 +9,7 @@
 #include <headers/hw_types.h>
 #include <source/gpio.h>
 
-#include <source/gpio.h>
-
+#include "gpio.h"
 #include "board.h"
 #include "debugpins.h"
 
