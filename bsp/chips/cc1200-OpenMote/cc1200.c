@@ -97,7 +97,8 @@ extern radio_vars_t radio_vars;
 extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
 static uint8_t rf_flags = 0;
-
+static bool    rf_receiving = false;
+static bool    rf_rx_buffer_empty = true;
 
 //=========================== prototypes ======================================
 
@@ -174,9 +175,11 @@ bool cc1200_off(void) {
     /* Put radio in idle mode */
     cc1200_idle();
 
-    /* Put the radio if off */
-//    cc1200_strobe(CC1200_SPWD);
-//    cc1200_strobe(CC1200_SXOFF);
+    // Put the radio in off mode, but only after we have read the rx fifo
+    if (!rf_receiving || rf_rx_buffer_empty) {
+        cc1200_strobe(CC1200_SPWD);
+        cc1200_strobe(CC1200_SXOFF);
+    }
 
     /* Clear all but the initialized flag */
     rf_flags = RF_INITIALIZED;
@@ -258,14 +261,12 @@ void cc1200_calibrate(void) {
   /* Perform a manual calibration */
   cc1200_strobe(CC1200_SCAL);
 
-  /* Wait until radio is in receive mode */
-  state = cc1200_state();
-  while (state != STATE_CALIBRATE) {
+  /* Wait until radio is in calibrate */
+  while (cc1200_state() != STATE_CALIBRATE) {
       cc1200_arch_clock_delay(100);
-      state = cc1200_state();
   }
 
-  /* Wait until radio is in receive mode */
+  /* Wait until radio is in idle mode */
   while (cc1200_state() != STATE_IDLE) {
       cc1200_arch_clock_delay(100);
   }
@@ -297,6 +298,8 @@ void cc1200_transmit(void) {
 
     /* Enable transmission */
     cc1200_strobe(CC1200_STX);
+
+    rf_receiving = false;
 }
 
 /**
@@ -311,6 +314,9 @@ void cc1200_receive(void) {
 
     rf_flags &= ~RF_RX_PROCESSING_PKT;
 
+    rf_receiving = true;
+    rf_rx_buffer_empty = true;
+
     /* Empty the receive buffer */
     cc1200_strobe(CC1200_SFRX);
 
@@ -321,6 +327,7 @@ void cc1200_receive(void) {
     while (cc1200_state() != STATE_RX) {
         cc1200_arch_clock_delay(100);
     }
+
 }
 
 /**
@@ -336,7 +343,7 @@ bool cc1200_set_channel(uint8_t channel) {
   }
 
   /* Check if tha radio is off */
-  was_off = false;
+  was_off = !(rf_flags & RF_ON);
 
   /* If it is off, turn it on */
   if (was_off) {
@@ -408,6 +415,13 @@ void cc1200_get_packet(uint8_t* buffer,
             *crc     = crc_corr & CRC_BIT_MASK;
             *lenRead = len + 2;
         }
+    }
+
+    // Put the radio to sleep if cc1200_off was called before cc1200_get_packet
+    rf_rx_buffer_empty = true;
+    if (!(rf_flags & RF_ON)) {
+        cc1200_strobe(CC1200_SPWD);
+        cc1200_strobe(CC1200_SXOFF);
     }
 }
 
@@ -536,6 +550,10 @@ void cc1200_gpio2_interrupt(void) {
         }
     }
     else {
+        if (rf_receiving) {
+            rf_rx_buffer_empty = false;
+        }
+
         if (radio_vars.endFrame_cb != NULL) {
             radio_vars.endFrame_cb(radiotimer_getCapturedTime());
         }
