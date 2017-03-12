@@ -1353,8 +1353,6 @@ port_INLINE void activity_ti9(PORT_RADIOTIMER_WIDTH capturedTime) {
     // cancel tt8
     radiotimer_cancel();
 #endif
-    // turn off the radio
-    radio_rfOff();
     //compute tics radio on.
     ieee154e_vars.radioOnTics+=(radio_getTimerValue()-ieee154e_vars.radioOnInit);
    
@@ -1397,6 +1395,9 @@ port_INLINE void activity_ti9(PORT_RADIOTIMER_WIDTH capturedTime) {
                                    &ieee154e_vars.ackReceived->l1_lqi,
                                    &ieee154e_vars.ackReceived->l1_crc);
       
+        // turn off the radio
+        radio_rfOff();
+
         // break if wrong length
         if (ieee154e_vars.ackReceived->length<LENGTH_CRC || ieee154e_vars.ackReceived->length>LENGTH_IEEE154_MAX) {
             // break from the do-while loop and execute the clean-up code below
@@ -1576,8 +1577,6 @@ port_INLINE void activity_ri5(PORT_RADIOTIMER_WIDTH capturedTime) {
    // cancel rt4
    radiotimer_cancel();
 #endif
-   // turn off the radio
-   radio_rfOff();
    ieee154e_vars.radioOnTics+=radio_getTimerValue()-ieee154e_vars.radioOnInit;
    // get a buffer to put the (received) data in
    ieee154e_vars.dataReceived = openqueue_getFreePacketBuffer(COMPONENT_IEEE802154E);
@@ -1616,6 +1615,9 @@ port_INLINE void activity_ri5(PORT_RADIOTIMER_WIDTH capturedTime) {
                                    &ieee154e_vars.dataReceived->l1_lqi,
                                    &ieee154e_vars.dataReceived->l1_crc);
       
+      // turn off the radio
+      radio_rfOff();
+
       // break if wrong length
       if (ieee154e_vars.dataReceived->length<LENGTH_CRC || ieee154e_vars.dataReceived->length>LENGTH_IEEE154_MAX ) {
          // jump to the error code below this do-while loop

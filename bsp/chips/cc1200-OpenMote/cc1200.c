@@ -45,6 +45,9 @@
 #define CC1200_GPIO2_PIN                ( GPIO_PIN_1 )
 #define CC1200_GPIO2_PIN_NR             ( 1 )
 
+#define SPI_MISO_PORT                   ( GPIO_A_PORT )
+#define SPI_MISO_PIN                    ( GPIO_PIN_4 )
+
 #define STATE_USES_MARC_STATE           ( 0 )
 #if STATE_USES_MARC_STATE
 /* We use the MARC_STATE register to poll the chip's status */
@@ -97,8 +100,6 @@ extern radio_vars_t radio_vars;
 extern const cc1200_rf_cfg_t cc1200_rf_cfg;
 
 static uint8_t rf_flags = 0;
-static bool    rf_receiving = false;
-static bool    rf_rx_buffer_empty = true;
 
 //=========================== prototypes ======================================
 
@@ -146,20 +147,20 @@ void cc1200_init(void) {
  * Turn the CC1200 on.
  */
 bool cc1200_on(void) {
-  /* Don't turn on if we are on already */
+  // Don't turn on if we are on already
   if (!(rf_flags & RF_ON)) {
-    /* Wake-up procedure, wait for GPIO0 to de-assert (CHIP_RDYn) */
+    // Wake-up procedure, wait for MISO to de-assert
     cc1200_arch_spi_select();
 
-    /* Wait until CHIP_RDYn signal on GPIO 0 is not low */
-    while (cc1200_arch_gpio0_read() != 0) {
+    // Wait until MISO signal is low
+    while (gpio_read(SPI_MISO_PORT, SPI_MISO_PIN) != 0) {
         cc1200_arch_clock_delay(100);
     }
 
-    /* Wake-up procedure completed */
+    // Wake-up procedure completed
     cc1200_arch_spi_deselect();
 
-    /* After a reset the chip is in IDLE mode */
+    // After a reset the chip is in IDLE mode
     rf_flags |= RF_ON;
   }
 
@@ -170,18 +171,16 @@ bool cc1200_on(void) {
  * Turn the radio off.
  */
 bool cc1200_off(void) {
-  /* Don't turn off if we are off already */
+
+  // Don't turn off if we are off already
   if (rf_flags & RF_ON) {
-    /* Put radio in idle mode */
+    // Put radio in idle mode
     cc1200_idle();
 
-    // Put the radio in off mode, but only after we have read the rx fifo
-    if (!rf_receiving || rf_rx_buffer_empty) {
-        cc1200_strobe(CC1200_SPWD);
-        cc1200_strobe(CC1200_SXOFF);
-    }
+    // Turn off the crystal oscillator
+    cc1200_strobe(CC1200_SXOFF);
 
-    /* Clear all but the initialized flag */
+    // Clear all but the initialized flag
     rf_flags = RF_INITIALIZED;
   }
 
@@ -298,8 +297,6 @@ void cc1200_transmit(void) {
 
     /* Enable transmission */
     cc1200_strobe(CC1200_STX);
-
-    rf_receiving = false;
 }
 
 /**
@@ -314,20 +311,11 @@ void cc1200_receive(void) {
 
     rf_flags &= ~RF_RX_PROCESSING_PKT;
 
-    rf_receiving = true;
-    rf_rx_buffer_empty = true;
-
-    /* Empty the receive buffer */
+    // Empty the receive buffer
     cc1200_strobe(CC1200_SFRX);
 
-    /* Go to receive mode */
+    // Go to receive mode
     cc1200_strobe(CC1200_SRX);
-
-    /* Wait until radio is in receive mode */
-    while (cc1200_state() != STATE_RX) {
-        cc1200_arch_clock_delay(100);
-    }
-
 }
 
 /**
@@ -363,16 +351,6 @@ bool cc1200_set_channel(uint8_t channel) {
   cc1200_single_write(CC1200_FREQ1, ((uint8_t *)&frequency)[1]);
   cc1200_single_write(CC1200_FREQ2, ((uint8_t *)&frequency)[2]);
 
-  /* Turn on RX again unless we turn off anyway */
-  if (!was_off) {
-      cc1200_calibrate();
-  }
-
-  /* If it was off, turn it off again */
-  if (was_off) {
-      cc1200_off();
-  }
-
   return true;
 }
 
@@ -380,6 +358,7 @@ bool cc1200_set_channel(uint8_t channel) {
  * Load a packet into the radio.
  */
 void cc1200_load_packet(uint8_t* buffer, uint16_t length) {
+    cc1200_on();
     cc1200_idle();
 
     cc1200_single_write(CC1200_TXFIFO, length-2);
@@ -415,13 +394,6 @@ void cc1200_get_packet(uint8_t* buffer,
             *crc     = crc_corr & CRC_BIT_MASK;
             *lenRead = len + 2;
         }
-    }
-
-    // Put the radio to sleep if cc1200_off was called before cc1200_get_packet
-    rf_rx_buffer_empty = true;
-    if (!(rf_flags & RF_ON)) {
-        cc1200_strobe(CC1200_SPWD);
-        cc1200_strobe(CC1200_SXOFF);
     }
 }
 
@@ -543,19 +515,17 @@ void cc1200_gpio0_interrupt(void) {
 }
 
 void cc1200_gpio2_interrupt(void) {
+    PORT_RADIOTIMER_WIDTH capturedTime = radiotimer_getCapturedTime();
+
     bool high = gpio_read(CC1200_GPIO2_PORT, CC1200_GPIO2_PIN);
     if (high) {
         if (radio_vars.startFrame_cb != NULL) {
-            radio_vars.startFrame_cb(radiotimer_getCapturedTime());
+            radio_vars.startFrame_cb(capturedTime);
         }
     }
     else {
-        if (rf_receiving) {
-            rf_rx_buffer_empty = false;
-        }
-
         if (radio_vars.endFrame_cb != NULL) {
-            radio_vars.endFrame_cb(radiotimer_getCapturedTime());
+            radio_vars.endFrame_cb(capturedTime);
         }
     }
 }
