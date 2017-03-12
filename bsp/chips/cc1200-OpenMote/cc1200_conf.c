@@ -69,6 +69,7 @@ static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_AGC_CFG1,          0x16},
   {CC1200_AGC_CFG0,          0x84},
   {CC1200_FIFO_CFG,          0x00},
+  {CC1200_SETTLING_CFG,      0x03},
   {CC1200_FS_CFG,            0x12},
   {CC1200_PKT_CFG2,          0x00},
   {CC1200_PKT_CFG0,          0x20},
