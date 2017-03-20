@@ -84,7 +84,7 @@ PORT_TIMER_WIDTH radio_getTimerPeriod() {
 //==== RF admin
 
 void radio_setFrequency(uint8_t frequency) {
-    // TODO
+    cc1200_set_channel(frequency);
 }
 
 void radio_rfOn(void) {

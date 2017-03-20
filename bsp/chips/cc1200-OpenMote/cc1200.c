@@ -322,35 +322,25 @@ void cc1200_receive(void) {
  * Set the channel.
  */
 bool cc1200_set_channel(uint8_t channel) {
+  cc1200_on();
+  cc1200_idle();
+/*
   uint32_t frequency;
-  bool was_off;
 
-  if (channel < cc1200_rf_cfg.min_channel ||
-      channel > cc1200_rf_cfg.max_channel) {
+  if (channel < cc1200_rf_cfg.min_channel || channel > cc1200_rf_cfg.max_channel) {
     return false;
   }
 
-  /* Check if tha radio is off */
-  was_off = !(rf_flags & RF_ON);
-
-  /* If it is off, turn it on */
-  if (was_off) {
-      cc1200_on();
-  }
-
-  /* Put the CC1200 in idle mode */
-  cc1200_idle();
-
-  /* Calculate the channel frequency */
+  // Calculate the channel frequency
   frequency = cc1200_rf_cfg.chan_center_freq0 + channel * cc1200_rf_cfg.chan_spacing;
   frequency *= FREQ_MULTIPLIER;
   frequency /= FREQ_DIVIDER;
 
-  /* Write the CC1200 registers */
+  // Write the CC1200 registers
   cc1200_single_write(CC1200_FREQ0, ((uint8_t *)&frequency)[0]);
   cc1200_single_write(CC1200_FREQ1, ((uint8_t *)&frequency)[1]);
   cc1200_single_write(CC1200_FREQ2, ((uint8_t *)&frequency)[2]);
-
+*/
   return true;
 }
 
