@@ -303,12 +303,6 @@ void cc1200_transmit(void) {
  * Put the radio in receive mode.
  */
 void cc1200_receive(void) {
-    cc1200_on();
-    cc1200_idle();
-
-    /* Calibrate before entering RX */
-    cc1200_calibrate();
-
     rf_flags &= ~RF_RX_PROCESSING_PKT;
 
     // Empty the receive buffer
