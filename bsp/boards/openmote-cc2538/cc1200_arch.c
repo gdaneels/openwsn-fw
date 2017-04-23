@@ -159,10 +159,10 @@ void cc1200_arch_spi_rw(uint8_t* read, uint8_t* write, uint16_t length) {
 
   } else if (write == NULL) {
     spi_txrx(cc1200_spi_buffer,
-             sizeof(cc1200_spi_buffer),
+             length,
              SPI_BUFFER,
              read,
-             length,
+             sizeof(cc1200_spi_buffer),
              SPI_FIRST,
              SPI_NOTLAST);
   } else {
