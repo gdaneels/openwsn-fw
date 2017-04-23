@@ -115,6 +115,8 @@ void radio_txEnable() {
     // wiggle debug pin
     debugpins_radio_set();
     leds_radio_on();
+
+    cc1200_calibrate();
 }
 
 void radio_txNow(void) {
