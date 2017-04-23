@@ -84,7 +84,7 @@
 #define PORT_maxTxAckPrepare                25    //  762us (measured  535us)
 // radio speed related
 #define PORT_delayTx                        14    //  427us (measured  421us)
-#define PORT_delayRx                        0     //    0us (can not measure)
+#define PORT_delayRx                        27    //  824us (can not measure, 500us <= delayRx <= 893us)
 // radio watchdog
 #endif
 

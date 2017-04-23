@@ -124,15 +124,13 @@ void radio_txNow(void) {
 //==== RX
 
 void radio_rxEnable(void) {
-    cc1200_receive();
-
     // wiggle debug pin
     debugpins_radio_set();
     leds_radio_on();
 }
 
 void radio_rxNow(void) {
-    // nothing to do, the radio is already listening.
+    cc1200_receive();
 }
 
 void radio_getReceivedFrame(uint8_t* bufRead,
