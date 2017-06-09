@@ -11,16 +11,16 @@
 //=========================== defines =========================================
 
 /* Base frequency in kHz */
-#define RF_CFG_CHAN_CENTER_F0           ( 863125 )
+#define RF_CFG_CHAN_CENTER_F0           ( 863750 )
 
 /* Channel spacing in kHz */
-#define RF_CFG_CHAN_SPACING             ( 200 )
+#define RF_CFG_CHAN_SPACING             ( 750 )
 
 /* The minimum channel */
 #define RF_CFG_MIN_CHANNEL              ( 0 )
 
 /* The maximum channel */
-#define RF_CFG_MAX_CHANNEL              ( 33 )
+#define RF_CFG_MAX_CHANNEL              ( 7 )
 
 /* The maximum output power in dBm */
 #define RF_CFG_MIN_TXPOWER              ( 0 )
@@ -47,7 +47,7 @@
  * Manchester enable = false
  * Address config = No address check
  * Bit rate = 250
- * RX filter BW = 833.333333
+ * RX filter BW = 416.666667
  */
 static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_IOCFG2,            0x06},
@@ -58,13 +58,13 @@ static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_DCFILT_CFG,        0x26},
   {CC1200_PREAMBLE_CFG0,     0x8A},
   {CC1200_IQIC,              0x00},
-  {CC1200_CHAN_BW,           0x02},
+  {CC1200_CHAN_BW,           0x81},
   {CC1200_MDMCFG1,           0x42},
   {CC1200_MDMCFG0,           0x05},
   {CC1200_SYMBOL_RATE2,      0xB9},
   {CC1200_SYMBOL_RATE1,      0x99},
   {CC1200_SYMBOL_RATE0,      0x9A},
-  {CC1200_AGC_REF,           0x2F},
+  {CC1200_AGC_REF,           0x2D},
   {CC1200_AGC_CS_THR,        0xEC},
   {CC1200_AGC_CFG1,          0x16},
   {CC1200_AGC_CFG0,          0x84},
@@ -73,7 +73,7 @@ static const cc1200_register_settings_t cc1200_register_settings [] = {
   {CC1200_FS_CFG,            0x12},
   {CC1200_PKT_CFG2,          0x00},
   {CC1200_PKT_CFG0,          0x20},
-  {CC1200_PA_CFG1,           0x6C},
+  {CC1200_PA_CFG0,           0x6C},
   {CC1200_PKT_LEN,           0xFF},
   {CC1200_IF_MIX_CFG,        0x18},
   {CC1200_TOC_CFG,           0x03},

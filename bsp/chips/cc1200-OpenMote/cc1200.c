@@ -316,26 +316,27 @@ void cc1200_receive(void) {
  * Set the channel.
  */
 bool cc1200_set_channel(uint8_t channel) {
-  cc1200_on();
-  cc1200_idle();
-/*
-  uint32_t frequency;
+    cc1200_on();
+    cc1200_idle();
 
-  if (channel < cc1200_rf_cfg.min_channel || channel > cc1200_rf_cfg.max_channel) {
-    return false;
-  }
+//    if (channel < cc1200_rf_cfg.min_channel || channel > cc1200_rf_cfg.max_channel) {
+//        return false;
+//    }
 
-  // Calculate the channel frequency
-  frequency = cc1200_rf_cfg.chan_center_freq0 + channel * cc1200_rf_cfg.chan_spacing;
-  frequency *= FREQ_MULTIPLIER;
-  frequency /= FREQ_DIVIDER;
+    // We have less channels than the CC2538 radio, so map them onto the ones we defined for the CC1200 radio
+    channel = (channel % (cc1200_rf_cfg.max_channel - cc1200_rf_cfg.min_channel + 1)) + cc1200_rf_cfg.min_channel;
 
-  // Write the CC1200 registers
-  cc1200_single_write(CC1200_FREQ0, ((uint8_t *)&frequency)[0]);
-  cc1200_single_write(CC1200_FREQ1, ((uint8_t *)&frequency)[1]);
-  cc1200_single_write(CC1200_FREQ2, ((uint8_t *)&frequency)[2]);
-*/
-  return true;
+    // Calculate the channel frequency
+    uint32_t frequency = cc1200_rf_cfg.chan_center_freq0 + channel * cc1200_rf_cfg.chan_spacing;
+    frequency *= FREQ_MULTIPLIER;
+    frequency /= FREQ_DIVIDER;
+
+    // Write the CC1200 registers
+    cc1200_single_write(CC1200_FREQ0, (uint8_t)((frequency >>  0) & 0xFF));
+    cc1200_single_write(CC1200_FREQ1, (uint8_t)((frequency >>  8) & 0xFF));
+    cc1200_single_write(CC1200_FREQ2, (uint8_t)((frequency >> 16) & 0xFF));
+
+    return true;
 }
 
 /**
